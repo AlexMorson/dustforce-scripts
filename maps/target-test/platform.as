@@ -33,7 +33,7 @@ class script {
     void on_level_start() {
         spr.add_sprite_set("script");
         @p = @controller_controllable(0);
-        @c = @clone(g, p, 17, 10, 14);
+        @c = @clone(g, p, 17, 14, 15);
         step(0);
     }
 
@@ -59,9 +59,15 @@ class script {
     }
 
     void draw(float subframe) {
-        c.draw(subframe);
         for (int i=0; i<ps.length(); ++i) {
-            ps[i].draw(spr);
+            ps[i].draw(subframe, spr, c);
+        }
+        c.draw(subframe);
+    }
+
+    void editor_step() {
+        for (int i=0; i<ps.length(); ++i) {
+            ps[i].editor_step();
         }
     }
 
@@ -124,12 +130,13 @@ class platform {
         // If the player is currently on this platform
         if (player_on) {
             // Check if the player has left the platform
-            if (!in_bounds || !p.ground()) {
+            if (not in_bounds or not p.ground()) {
                 player_on = false;
                 // Move the player to the level of the platform
                 p.y(y);
                 // Reset the clone to the player's position
-                c.set_offset(0, 0);
+                c.offset_x = 0;
+                c.offset_y = 0;
             }
         } else {
             // Check if the player is now on the platform
@@ -156,13 +163,17 @@ class platform {
             p.y(48.0 * tile_y);
 
             // Move the clone to the position of the platform
-            c.set_offset(0, y - 48.0 * tile_y);
+            c.offset_y = y - 48.0 * tile_y;
         }
     }
 
-    void draw(sprites@ spr) {
+    void draw(float subframe, sprites@ spr, clone@ c) {
         // g.draw_rectangle_world(19, 10, x, y, x+w, y+h, 0, 0x44CB0079);
-        // outline_rect(g, x, y, x+w, y+h, 19, 10, 1, 0xDDCB0079);
+        // outline_rect(g, 19, 10, x, y, x+w, y+h, 1, 0xDDCB0079);
+
+        float draw_x = subframe * (x - old_x) + old_x;
+        float draw_y = subframe * (y - old_y) + old_y;
+
         int tile_count = round(w / 48.0);
         for (int tile_num = 0; tile_num < tile_count; ++tile_num) {
             string tile_name = "platform_middle";
@@ -171,17 +182,27 @@ class platform {
             } else if (tile_num == tile_count - 1) {
                 tile_name = "platform_right";
             }
-            spr.draw_world(19, 8, tile_name, 1, 1, x + 48 * tile_num, y, 0, 1, 1, 0xFFFFFFFF);
+            spr.draw_world(16, 7, tile_name, 1, 1, draw_x + 48 * tile_num, draw_y, 0, 1.1, 1.1, 0xFFAAAAAA);
+            spr.draw_world(19, 8, tile_name, 1, 1, draw_x + 48 * tile_num, draw_y, 0, 1, 1, 0xFFFFFFFF);
+        }
+
+        if (player_on) {
+            int tile_y = int(ceil(y / 48.0));
+            c.offset_x = draw_x - old_x;
+            c.offset_y = draw_y - 48.0 * tile_y;
         }
     }
 
-    void editor_draw(scene@ g) {
+    void editor_step() {
         x1 = round(x1 / 24.0) * 24.0;
         x2 = round(x2 / 24.0) * 24.0;
         y1 = round(y1 / 24.0) * 24.0;
         y2 = round(y2 / 24.0) * 24.0;
-        outline_rect(g, x1-w/2.0, y1-h/2.0, x1+w/2.0, y1+h/2.0, 20, 10, 2, 0xFF00FF00);
-        outline_rect(g, x2-w/2.0, y2-h/2.0, x2+w/2.0, y2+h/2.0, 20, 10, 2, 0xFFFF0000);
+    }
+
+    void editor_draw(scene@ g) {
+        outline_rect(g, 20, 10, x1-w/2.0, y1-h/2.0, x1+w/2.0, y1+h/2.0, 2, 0xFF00FF00);
+        outline_rect(g, 20, 10, x2-w/2.0, y2-h/2.0, x2+w/2.0, y2+h/2.0, 2, 0xFFFF0000);
         g.draw_line_world(20, 10, x1, y1, x2, y2, 3, 0xFF000000);
     }
 }
