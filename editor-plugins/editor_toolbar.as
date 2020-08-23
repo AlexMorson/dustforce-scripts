@@ -2,41 +2,41 @@
 
 const array<string> editor_tabs = {"Select", "Tiles", "Props", "Entities", "Triggers", "Camera", "Emitters", "Level Settings", "Scripts", "Help"};
 
-const int BACKGROUND_COLOUR = 0x35302A;
-const int MENU_ITEM_WIDTH = 60;
+const int TOOLBAR_BG_COLOUR = 0x35302A;
+const int TOOLBAR_ITEM_WIDTH = 60;
 const float HUD_WIDTH = 1600.0;
 const float HUD_HEIGHT = 900.0;
 const float HUD_WIDTH_HALF = HUD_WIDTH / 2.0;
 const float HUD_HEIGHT_HALF = HUD_HEIGHT / 2.0;
 
 class script {
-    Menu menu;
+    Toolbar toolbar;
 
     void editor_step() {
-        menu.editor_step();
+        toolbar.editor_step();
     }
 
     void editor_draw(float sub_frame) {
-        menu.editor_draw(sub_frame);
+        toolbar.editor_draw(sub_frame);
     }
 }
 
-class Menu : callback_base {
+class Toolbar : callback_base {
     scene@ g;
     editor_api@ e;
 
     sprites@ spr;
 
-    array<MenuColumn@> columns;
+    array<ToolbarColumn@> columns;
 
-    bool mouse_in_gui = true;
+    bool mouse_in_toolbar = true;
     float hud_scale;
     int selected_ix, selected_iy;
     string selected_tab_name;
     int mouse_ix, mouse_iy;
     float visibility_timer = 1.9;
 
-    Menu() {
+    Toolbar() {
         @g = get_scene();
         @e = get_editor_api();
         e.hide_gui(false);
@@ -44,7 +44,7 @@ class Menu : callback_base {
         @spr = create_sprites();
 
         for (int ix=0; ix<10; ++ix) {
-            columns.insertLast(MenuColumn(spr, ix));
+            columns.insertLast(ToolbarColumn(spr, ix));
         }
 
         add_tab(0, "Select", "editor", "selecticon");
@@ -58,8 +58,8 @@ class Menu : callback_base {
         add_tab(8, "Scripts", "dustmod", "scripticon");
         add_tab(9, "Help", "editor", "helpicon");
 
-        add_broadcast_receiver("EditorMenu.RegisterTab", this, "register_tab");
-        add_broadcast_receiver("EditorMenu.SelectTab", this, "select_tab");
+        add_broadcast_receiver("Toolbar.RegisterTab", this, "register_tab");
+        add_broadcast_receiver("Toolbar.SelectTab", this, "select_tab");
     }
 
     void register_tab(string, message@ msg) {
@@ -87,7 +87,7 @@ class Menu : callback_base {
         if (error == "") {
             add_tab(ix, name, "script", icon);
         } else {
-            puts("Failed to add editor menu tab:" + error);
+            puts("Failed to add editor toolbar tab:" + error);
         }
     }
 
@@ -112,7 +112,7 @@ class Menu : callback_base {
         if (error == "") {
             select_tab(ix, iy, true);
         } else {
-            puts("Failed to select editor menu tab:" + error);
+            puts("Failed to select editor toolbar tab:" + error);
         }
     }
 
@@ -123,8 +123,8 @@ class Menu : callback_base {
 
     void editor_step() {
         hud_scale = HUD_WIDTH / g.hud_screen_width(false);
-        mouse_ix = int(floor(g.mouse_x_hud(0, false)) / MENU_ITEM_WIDTH + 5);
-        mouse_iy = int(floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale) / MENU_ITEM_WIDTH);
+        mouse_ix = int(floor(g.mouse_x_hud(0, false)) / TOOLBAR_ITEM_WIDTH + 5);
+        mouse_iy = int(floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale) / TOOLBAR_ITEM_WIDTH);
 
         for (int ix=0; ix<int(columns.size()); ++ix) {
             columns[ix].step(mouse_ix, mouse_iy);
@@ -134,24 +134,24 @@ class Menu : callback_base {
             select_tab(mouse_ix, mouse_iy);
         }
 
-        if (e.mouse_in_gui() or mouse_in_menu()) {
-            if (not mouse_in_gui) {
-                mouse_in_gui = true;
+        if (e.mouse_in_gui() or check_mouse_in_toolbar()) {
+            if (not mouse_in_toolbar) {
+                mouse_in_toolbar = true;
                 if (selected_tab_name != "") disable_tab_tool(selected_tab_name);
             }
             visibility_timer = min(1.9, visibility_timer + 0.1);
             if (visibility_timer > 1) visibility_timer = 1.9;
         } else {
-            if (mouse_in_gui) {
-                mouse_in_gui = false;
+            if (mouse_in_toolbar) {
+                mouse_in_toolbar = false;
                 if (selected_tab_name != "") enable_tab_tool(selected_tab_name);
             }
             visibility_timer = max(0, visibility_timer - 0.1);
         }
     }
 
-    bool mouse_in_menu() {
-        return 0 <= mouse_ix and mouse_ix < int(columns.size()) and columns[mouse_ix].mouse_in_column(mouse_iy);
+    bool check_mouse_in_toolbar() {
+        return 0 <= mouse_ix and mouse_ix < int(columns.size()) and columns[mouse_ix].check_mouse_in_column(mouse_iy);
     }
 
     void select_tab(int ix, int iy, bool force=false) {
@@ -179,12 +179,12 @@ class Menu : callback_base {
 
     void enable_tab_tool(string tab_name) {
         message@ msg = create_message();
-        broadcast_message("EditorMenu.EnableTab." + tab_name, msg);
+        broadcast_message("Toolbar.EnableTab." + tab_name, msg);
     }
 
     void disable_tab_tool(string tab_name) {
         message@ msg = create_message();
-        broadcast_message("EditorMenu.DisableTab." + tab_name, msg);
+        broadcast_message("Toolbar.DisableTab." + tab_name, msg);
     }
 
     string get_tab_name(int ix, int iy) {
@@ -194,7 +194,7 @@ class Menu : callback_base {
 
     void get_tab_coords(string tab_name, int &out ix, int &out iy) {
         for (ix=0; ix<int(columns.size()); ++ix) {
-            MenuColumn@ column  = @columns[ix];
+            ToolbarColumn@ column  = @columns[ix];
             for (iy=0; iy<int(column.items.size()); ++iy) {
                 if (column.items[iy].name == tab_name) {
                     return;
@@ -212,24 +212,24 @@ class Menu : callback_base {
     }
 }
 
-class MenuColumn {
+class ToolbarColumn {
     sprites@ spr;
 
     int ix;
     bool expanded = false;
     bool selected = false;
-    array<MenuItem@> items;
+    array<ToolbarItem@> items;
 
-    MenuColumn(sprites@ spr, int ix) {
+    ToolbarColumn(sprites@ spr, int ix) {
         @this.spr = spr;
         this.ix = ix;
     }
 
     void add_tab(string name, string sprite_name) {
-        items.insertLast(MenuItem(spr, name, sprite_name));
+        items.insertLast(ToolbarItem(spr, name, sprite_name));
     }
 
-    bool mouse_in_column(int mouse_iy) {
+    bool check_mouse_in_column(int mouse_iy) {
         return (expanded and 0 <= mouse_iy and mouse_iy < int(items.size())) or mouse_iy == 0;
     }
 
@@ -249,7 +249,7 @@ class MenuColumn {
     }
 
     void step(int mouse_ix, int mouse_iy) {
-       expanded = mouse_ix == ix and mouse_in_column(mouse_iy);
+       expanded = mouse_ix == ix and check_mouse_in_column(mouse_iy);
         for (uint iy=0; iy<items.size(); ++iy) {
             items[iy].draw_tooltip = mouse_ix == int(ix) and mouse_iy == int(iy) and (iy == 0 or expanded);
         }
@@ -266,7 +266,7 @@ class MenuColumn {
     }
 }
 
-class MenuItem {
+class ToolbarItem {
     scene@ g;
     sprites@ spr;
     textfield@ tooltip;
@@ -277,7 +277,7 @@ class MenuItem {
     bool draw_tooltip = false;
     bool selected = false;
 
-    MenuItem(sprites@ spr, string name, string sprite_name) {
+    ToolbarItem(sprites@ spr, string name, string sprite_name) {
         @g = get_scene();
         @this.spr = spr;
         this.name = name;
@@ -290,7 +290,7 @@ class MenuItem {
     }
 
     void draw(int ix, int iy, float visibility, float hud_scale) {
-        const float w = MENU_ITEM_WIDTH * hud_scale;
+        const float w = TOOLBAR_ITEM_WIDTH * hud_scale;
         const float h = w;
         const float x = (ix-5) * w;
         const float y = iy * h - HUD_HEIGHT_HALF;
@@ -304,12 +304,12 @@ class MenuItem {
                 0, 0x88FFFFFF
             );
         }
-        int background_opacity = int(floor(0xAA * visibility));
+        int toolbar_bg_opacity = int(floor(0xAA * visibility));
         g.draw_rectangle_hud(
             10, 0,
             x, y,
             x + w, y + h,
-            0, (background_opacity << 24) + BACKGROUND_COLOUR
+            0, (toolbar_bg_opacity << 24) + TOOLBAR_BG_COLOUR
         );
         g.draw_glass_hud(
             8, 0,

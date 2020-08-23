@@ -35,19 +35,19 @@ class script : callback_base {
     }
 
     void build_sprites(message@ msg) {
-        msg.set_string("EditorMenu.proptoolicon", "proptoolicon");
+        msg.set_string("Toolbar.proptoolicon", "proptoolicon");
     }
 
     void register_editor_tab() {
         message@ msg = create_message();
         msg.set_int("ix", 2);
         msg.set_string("name", "Prop Tool");
-        msg.set_string("icon", "EditorMenu.proptoolicon");
+        msg.set_string("icon", "Toolbar.proptoolicon");
         msg.set_int("shortcut_vk", VK::Q);
-        broadcast_message("EditorMenu.RegisterTab", msg);
+        broadcast_message("Toolbar.RegisterTab", msg);
 
-        add_broadcast_receiver("EditorMenu.EnableTab.Prop Tool", this, "enable");
-        add_broadcast_receiver("EditorMenu.DisableTab.Prop Tool", this, "disable");
+        add_broadcast_receiver("Toolbar.EnableTab.Prop Tool", this, "enable");
+        add_broadcast_receiver("Toolbar.DisableTab.Prop Tool", this, "disable");
     }
 
     void enable(string, message@) {
@@ -62,7 +62,7 @@ class script : callback_base {
     void toggle() {
         message@ msg = create_message();
         msg.set_string("name", state == DISABLED ? "Prop Tool" : "Props");
-        broadcast_message("EditorMenu.SelectTab", msg);
+        broadcast_message("Toolbar.SelectTab", msg);
     }
 
     void editor_step() {
