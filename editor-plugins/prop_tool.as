@@ -44,21 +44,20 @@ class script : callback_base {
         msg.set_int("ix", 2);
         msg.set_string("name", "Prop Tool");
         msg.set_string("icon", "Toolbar.proptoolicon");
-        msg.set_int("shortcut_vk", VK::Q);
         broadcast_message("Toolbar.RegisterTab", msg);
 
-        add_broadcast_receiver("Toolbar.EnableTab.Prop Tool", this, "enable");
-        add_broadcast_receiver("Toolbar.DisableTab.Prop Tool", this, "disable");
+        add_broadcast_receiver("Toolbar.SelectTab.Prop Tool", this, "select_tab");
+        add_broadcast_receiver("Toolbar.DeselectTab.Prop Tool", this, "deselect_tab");
         add_broadcast_receiver("Toolbar.MouseEnterToolbar", this, "mouse_enter_toolbar");
         add_broadcast_receiver("Toolbar.MouseLeaveToolbar", this, "mouse_leave_toolbar");
     }
 
-    void enable(string, message@) {
+    void select_tab(string, message@) {
         state = IDLE;
         @selected_prop = null;
     }
 
-    void disable(string, message@) {
+    void deselect_tab(string, message@) {
         state = DISABLED;
     }
 

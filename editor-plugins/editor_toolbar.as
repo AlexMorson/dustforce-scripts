@@ -169,11 +169,13 @@ class Toolbar : callback_base {
     }
 
     void select_tab(int ix, int iy, bool force=false) {
+        if (selected_ix == ix and selected_iy == iy) return;
+
         const string new_selected_tab_name = get_tab_name(ix, iy);
         if (new_selected_tab_name != "" and (columns[ix].expanded or force)) {
             if (selected_tab_name != "") {
                 columns[selected_ix].deselect_tab(selected_iy);
-                broadcast_message("Toolbar.DisableTab." + selected_tab_name, create_message());
+                broadcast_message("Toolbar.DeselectTab." + selected_tab_name, create_message());
             }
 
             mouse_in_menu = false;
@@ -183,7 +185,7 @@ class Toolbar : callback_base {
             selected_ix = ix;
             selected_iy = iy;
             selected_tab_name = new_selected_tab_name;
-            broadcast_message("Toolbar.EnableTab." + new_selected_tab_name, create_message());
+            broadcast_message("Toolbar.SelectTab." + new_selected_tab_name, create_message());
         }
     }
 
