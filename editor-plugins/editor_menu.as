@@ -150,12 +150,6 @@ class Menu : callback_base {
         }
     }
 
-    void expand_columns() {
-        for (int ix=0; ix<int(columns.size()); ++ix) {
-            columns[ix].expanded = mouse_ix == ix and columns[ix].mouse_in_column(mouse_iy);
-        }
-    }
-
     bool mouse_in_menu() {
         return 0 <= mouse_ix and mouse_ix < int(columns.size()) and columns[mouse_ix].mouse_in_column(mouse_iy);
     }
