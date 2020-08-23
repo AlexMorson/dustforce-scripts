@@ -48,7 +48,6 @@ class script : callback_base {
 
         add_broadcast_receiver("EditorMenu.EnableTab.Prop Tool", this, "enable");
         add_broadcast_receiver("EditorMenu.DisableTab.Prop Tool", this, "disable");
-        add_broadcast_receiver("EditorMenu.ToggleTab.Prop Tool", this, "toggle");
     }
 
     void enable(string, message@) {
@@ -60,9 +59,9 @@ class script : callback_base {
         state = DISABLED;
     }
 
-    void toggle(string, message@) {
+    void toggle() {
         message@ msg = create_message();
-        msg.set_string("name", "Props");
+        msg.set_string("name", state == DISABLED ? "Prop Tool" : "Props");
         broadcast_message("EditorMenu.SelectTab", msg);
     }
 
@@ -70,6 +69,10 @@ class script : callback_base {
         if (first_frame) {
             register_editor_tab();
             first_frame = false;
+        }
+
+        if (e.key_check_pressed_vk(VK::Q)) {
+            toggle();
         }
 
         update_mouse_vars();
@@ -107,19 +110,19 @@ class script : callback_base {
 
             float sx, sy, scale;
             scale_from_layer(selected_prop.p.x(), selected_prop.p.y(), selected_prop.p.layer(), sx, sy, scale);
-            
+
             if (selected_prop.p.layer() <= 5) {
                 scale = selected_prop.p.layer() <= 5 ? 2.0 : scale;
             }
 
             spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(),
-                sx, sy + 2 / c.editor_zoom(),
+                sx + 2, sy + 2,
                 selected_prop.p.rotation(),
                 scale * selected_prop.prop_scale_x,
                 scale * selected_prop.prop_scale_y,
                 0x66000000);
             spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(),
-                sx, sy - 2 / c.editor_zoom(),
+                sx - 2, sy - 2,
                 selected_prop.p.rotation(),
                 scale * selected_prop.prop_scale_x,
                 scale * selected_prop.prop_scale_y,
