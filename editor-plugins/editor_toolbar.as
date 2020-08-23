@@ -1,4 +1,5 @@
 #include "lib/enums/GVB.cpp"
+#include "gui_visibility.as"
 
 const int TOOLBAR_BG_COLOUR = 0x35302A;
 const int TOOLBAR_ITEM_WIDTH = 60;
@@ -20,7 +21,7 @@ class script {
     }
 }
 
-class Toolbar : callback_base {
+class Toolbar : callback_base, GuiVisibility {
     scene@ g;
     editor_api@ e;
 
@@ -28,13 +29,10 @@ class Toolbar : callback_base {
 
     array<ToolbarColumn@> columns;
 
-    bool mouse_in_toolbar = false;
-    bool mouse_in_menu = false;
     float hud_scale;
     int selected_ix, selected_iy;
     string selected_tab_name;
     int mouse_ix, mouse_iy;
-    float visibility_timer = 1.9;
 
     Toolbar() {
         @g = get_scene();
@@ -156,12 +154,7 @@ class Toolbar : callback_base {
             }
         }
 
-        if (mouse_in_menu or mouse_in_toolbar) {
-            visibility_timer = min(1.9, visibility_timer + 0.1);
-            if (visibility_timer > 1) visibility_timer = 1.9;
-        } else {
-            visibility_timer = max(0, visibility_timer - 0.1);
-        }
+        update_gui_visibility();
     }
 
     bool check_mouse_in_toolbar() {
@@ -209,7 +202,7 @@ class Toolbar : callback_base {
 
     void editor_draw(float sub_frame) {
         for (int ix=0; ix<int(columns.size()); ++ix) {
-            columns[ix].draw(selected_iy != 0, min(1.0, visibility_timer), hud_scale);
+            columns[ix].draw(selected_iy != 0, gui_visibility, hud_scale);
         }
     }
 }

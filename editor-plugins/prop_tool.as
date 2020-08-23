@@ -20,7 +20,6 @@ class script : EditorTool {
 
     sprites@ spr;
 
-    bool mouse_in_toolbar = false;
     PropToolState state = DISABLED;
     Prop@ selected_prop;
 
@@ -50,14 +49,6 @@ class script : EditorTool {
 
     void on_deselect_tab() override {
         state = DISABLED;
-    }
-
-    void on_mouse_enter_toolbar() override {
-        mouse_in_toolbar = true;
-    }
-
-    void on_mouse_leave_toolbar() override {
-        mouse_in_toolbar = false;
     }
 
     void toggle() {

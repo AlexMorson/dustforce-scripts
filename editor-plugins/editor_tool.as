@@ -1,4 +1,6 @@
-abstract class EditorTool : callback_base {
+#include "gui_visibility.as"
+
+abstract class EditorTool : callback_base, GuiVisibility {
     private bool first_frame = true;
 
     void register_tab() {}
@@ -12,6 +14,8 @@ abstract class EditorTool : callback_base {
             register_tab();
             first_frame = false;
         }
+
+        update_gui_visibility();
     }
 
     protected void register_tab(int ix, string name, string icon = "") {
@@ -29,6 +33,12 @@ abstract class EditorTool : callback_base {
 
     private void _on_select_tab(string, message@) { on_select_tab(); }
     private void _on_deselect_tab(string, message@) { on_deselect_tab(); }
-    private void _on_mouse_enter_toolbar(string, message@) { on_mouse_enter_toolbar(); }
-    private void _on_mouse_leave_toolbar(string, message@) { on_mouse_leave_toolbar(); }
+    private void _on_mouse_enter_toolbar(string, message@) {
+        mouse_in_toolbar = true;
+        on_mouse_enter_toolbar();
+    }
+    private void _on_mouse_leave_toolbar(string, message@) {
+        mouse_in_toolbar = false;
+        on_mouse_leave_toolbar();
+    }
 }
