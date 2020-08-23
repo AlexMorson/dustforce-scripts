@@ -1,6 +1,7 @@
 #include "lib/props.cpp"
 #include "lib/enums/GVB.cpp"
 #include "lib/enums/VK.cpp"
+#include "editor_tool.as"
 
 const string EMBED_proptoolicon = "proptoolicon.png";
 
@@ -12,14 +13,13 @@ enum PropToolState {
     DELETE
 }
 
-class script : callback_base {
+class script : EditorTool {
     scene@ g;
     editor_api@ e;
     camera@ c;
 
     sprites@ spr;
 
-    bool first_frame = true;
     bool mouse_in_toolbar = false;
     PropToolState state = DISABLED;
     Prop@ selected_prop;
@@ -39,33 +39,24 @@ class script : callback_base {
         msg.set_string("Toolbar.proptoolicon", "proptoolicon");
     }
 
-    void register_editor_tab() {
-        message@ msg = create_message();
-        msg.set_int("ix", 2);
-        msg.set_string("name", "Prop Tool");
-        msg.set_string("icon", "Toolbar.proptoolicon");
-        broadcast_message("Toolbar.RegisterTab", msg);
-
-        add_broadcast_receiver("Toolbar.SelectTab.Prop Tool", this, "select_tab");
-        add_broadcast_receiver("Toolbar.DeselectTab.Prop Tool", this, "deselect_tab");
-        add_broadcast_receiver("Toolbar.MouseEnterToolbar", this, "mouse_enter_toolbar");
-        add_broadcast_receiver("Toolbar.MouseLeaveToolbar", this, "mouse_leave_toolbar");
+    void register_tab() override {
+        register_tab(2, "Prop Tool", "Toolbar.proptoolicon");
     }
 
-    void select_tab(string, message@) {
+    void on_select_tab() override {
         state = IDLE;
         @selected_prop = null;
     }
 
-    void deselect_tab(string, message@) {
+    void on_deselect_tab() override {
         state = DISABLED;
     }
 
-    void mouse_enter_toolbar(string, message@) {
+    void on_mouse_enter_toolbar() override {
         mouse_in_toolbar = true;
     }
 
-    void mouse_leave_toolbar(string, message@) {
+    void on_mouse_leave_toolbar() override {
         mouse_in_toolbar = false;
     }
 
@@ -76,10 +67,7 @@ class script : callback_base {
     }
 
     void editor_step() {
-        if (first_frame) {
-            register_editor_tab();
-            first_frame = false;
-        }
+        EditorTool::editor_step();
 
         if (e.key_check_pressed_vk(VK::Q)) {
             toggle();
