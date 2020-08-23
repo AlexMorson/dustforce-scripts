@@ -1,7 +1,5 @@
 #include "lib/enums/GVB.cpp"
 
-const array<string> editor_tabs = {"Select", "Tiles", "Props", "Entities", "Triggers", "Camera", "Emitters", "Level Settings", "Scripts", "Help"};
-
 const int TOOLBAR_BG_COLOUR = 0x35302A;
 const int TOOLBAR_ITEM_WIDTH = 60;
 
@@ -180,7 +178,7 @@ class Toolbar : callback_base {
 
             mouse_in_menu = false;
             e.hide_gui(iy != 0);
-            e.editor_tab(editor_tabs[ix]);
+            e.editor_tab(columns[ix].items[0].name);
             columns[ix].select_tab(iy);
             selected_ix = ix;
             selected_iy = iy;
