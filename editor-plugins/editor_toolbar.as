@@ -4,6 +4,7 @@ const array<string> editor_tabs = {"Select", "Tiles", "Props", "Entities", "Trig
 
 const int TOOLBAR_BG_COLOUR = 0x35302A;
 const int TOOLBAR_ITEM_WIDTH = 60;
+
 const float HUD_WIDTH = 1600.0;
 const float HUD_HEIGHT = 900.0;
 const float HUD_WIDTH_HALF = HUD_WIDTH / 2.0;
@@ -29,7 +30,8 @@ class Toolbar : callback_base {
 
     array<ToolbarColumn@> columns;
 
-    bool mouse_in_toolbar = true;
+    bool mouse_in_toolbar = false;
+    bool mouse_in_menu = false;
     float hud_scale;
     int selected_ix, selected_iy;
     string selected_tab_name;
@@ -60,6 +62,8 @@ class Toolbar : callback_base {
 
         add_broadcast_receiver("Toolbar.RegisterTab", this, "register_tab");
         add_broadcast_receiver("Toolbar.SelectTab", this, "select_tab");
+        add_broadcast_receiver("Toolbar.MouseEnterMenu", this, "mouse_enter_menu");
+        add_broadcast_receiver("Toolbar.MouseLeaveMenu", this, "mouse_leave_menu");
     }
 
     void register_tab(string, message@ msg) {
@@ -116,6 +120,14 @@ class Toolbar : callback_base {
         }
     }
 
+    void mouse_enter_menu(string, message@) {
+        mouse_in_menu = true;
+    }
+
+    void mouse_leave_menu(string, message@) {
+        mouse_in_menu = false;
+    }
+
     void add_tab(int ix, string name, string sprite_set, string sprite_name) {
         spr.add_sprite_set(sprite_set);
         columns[ix].add_tab(name, sprite_name);
@@ -137,15 +149,19 @@ class Toolbar : callback_base {
         if (e.mouse_in_gui() or check_mouse_in_toolbar()) {
             if (not mouse_in_toolbar) {
                 mouse_in_toolbar = true;
-                if (selected_tab_name != "") disable_tab_tool(selected_tab_name);
+                broadcast_message("Toolbar.MouseEnterToolbar", create_message());
             }
-            visibility_timer = min(1.9, visibility_timer + 0.1);
-            if (visibility_timer > 1) visibility_timer = 1.9;
         } else {
             if (mouse_in_toolbar) {
                 mouse_in_toolbar = false;
-                if (selected_tab_name != "") enable_tab_tool(selected_tab_name);
+                broadcast_message("Toolbar.MouseLeaveToolbar", create_message());
             }
+        }
+
+        if (mouse_in_menu or mouse_in_toolbar) {
+            visibility_timer = min(1.9, visibility_timer + 0.1);
+            if (visibility_timer > 1) visibility_timer = 1.9;
+        } else {
             visibility_timer = max(0, visibility_timer - 0.1);
         }
     }
@@ -159,32 +175,18 @@ class Toolbar : callback_base {
         if (new_selected_tab_name != "" and (columns[ix].expanded or force)) {
             if (selected_tab_name != "") {
                 columns[selected_ix].deselect_tab(selected_iy);
-                if (force) {
-                    disable_tab_tool(selected_tab_name);
-                }
+                broadcast_message("Toolbar.DisableTab." + selected_tab_name, create_message());
             }
 
+            mouse_in_menu = false;
             e.hide_gui(iy != 0);
             e.editor_tab(editor_tabs[ix]);
             columns[ix].select_tab(iy);
             selected_ix = ix;
             selected_iy = iy;
             selected_tab_name = new_selected_tab_name;
-
-            if (force and selected_tab_name != "") {
-                enable_tab_tool(selected_tab_name);
-            }
+            broadcast_message("Toolbar.EnableTab." + new_selected_tab_name, create_message());
         }
-    }
-
-    void enable_tab_tool(string tab_name) {
-        message@ msg = create_message();
-        broadcast_message("Toolbar.EnableTab." + tab_name, msg);
-    }
-
-    void disable_tab_tool(string tab_name) {
-        message@ msg = create_message();
-        broadcast_message("Toolbar.DisableTab." + tab_name, msg);
     }
 
     string get_tab_name(int ix, int iy) {

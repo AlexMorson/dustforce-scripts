@@ -20,6 +20,7 @@ class script : callback_base {
     sprites@ spr;
 
     bool first_frame = true;
+    bool mouse_in_toolbar = false;
     PropToolState state = DISABLED;
     Prop@ selected_prop;
 
@@ -48,6 +49,8 @@ class script : callback_base {
 
         add_broadcast_receiver("Toolbar.EnableTab.Prop Tool", this, "enable");
         add_broadcast_receiver("Toolbar.DisableTab.Prop Tool", this, "disable");
+        add_broadcast_receiver("Toolbar.MouseEnterToolbar", this, "mouse_enter_toolbar");
+        add_broadcast_receiver("Toolbar.MouseLeaveToolbar", this, "mouse_leave_toolbar");
     }
 
     void enable(string, message@) {
@@ -57,6 +60,14 @@ class script : callback_base {
 
     void disable(string, message@) {
         state = DISABLED;
+    }
+
+    void mouse_enter_toolbar(string, message@) {
+        mouse_in_toolbar = true;
+    }
+
+    void mouse_leave_toolbar(string, message@) {
+        mouse_in_toolbar = false;
     }
 
     void toggle() {
@@ -76,6 +87,9 @@ class script : callback_base {
         }
 
         update_mouse_vars();
+
+        if (state == IDLE and mouse_in_toolbar) return;
+
         switch (state) {
             case IDLE:
                 update_selected_prop();
@@ -103,7 +117,7 @@ class script : callback_base {
     }
 
     void editor_draw(float sub_frame) {
-        if (state == IDLE and selected_prop !is null) {
+        if (state == IDLE and not mouse_in_toolbar and selected_prop !is null) {
             string sprite_set, sprite_name;
             sprite_from_prop(@selected_prop.p, sprite_set, sprite_name);
             spr.add_sprite_set(sprite_set);
