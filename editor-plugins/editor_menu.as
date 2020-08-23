@@ -1,4 +1,5 @@
 #include "lib/enums/GVB.cpp"
+#include "lib/enums/VK.cpp"
 
 const array<string> editor_tabs = {"Select", "Tiles", "Props", "Entities", "Triggers", "Camera", "Emitters", "Level Settings", "Scripts", "Help"};
 
@@ -59,6 +60,7 @@ class Menu : callback_base {
         add_tab(9, "Help", "editor", "helpicon");
 
         add_broadcast_receiver("EditorMenu.RegisterTab", this, "register_tab");
+        add_broadcast_receiver("EditorMenu.SelectTab", this, "select_tab");
     }
 
     void register_tab(string, message@ msg) {
@@ -76,7 +78,7 @@ class Menu : callback_base {
             error += "\nNo column index";
         } else {
             ix = msg.get_int("ix");
-            if (ix < 0 or columns.size() <= ix) {
+            if (ix < 0 or int(columns.size()) <= ix) {
                 error += "\nInvalid column index";
             }
         }
@@ -84,24 +86,46 @@ class Menu : callback_base {
         string icon = msg.has_string("icon") ? msg.get_string("icon") : "";
 
         if (error == "") {
-            add_tab(ix, name, "script", icon);
+            add_tab(ix, name, "script", icon, msg.has_int("shortcut_vk") ? msg.get_int("shortcut_vk") : -1);
         } else {
             puts("Failed to add editor menu tab:" + error);
         }
     }
 
-    void add_tab(int ix, string name, string sprite_set, string sprite_name) {
+    void select_tab(string, message@ msg) {
+        string error = "";
+        
+        string name;
+        if (not msg.has_string("name") or msg.get_string("name") == "") {
+            error += "\nNo tab name";
+        } else {
+            name = msg.get_string("name");
+        }
+        
+        MenuItem@ item = null;
+        if (error == "") {
+            @item = get_menu_item(name);
+        }
+        
+        if (error == "") {
+            select_tab(item.column.ix, item.iy, true);
+        } else {
+            puts("Failed to select editor menu tab:" + error);
+        }
+    }
+
+    void add_tab(int ix, string name, string sprite_set, string sprite_name, int shortcut_vk=-1) {
         spr.add_sprite_set(sprite_set);
-        columns[ix].add_tab(name, sprite_name);
+        columns[ix].add_tab(name, sprite_name, shortcut_vk);
     }
 
     void editor_step() {
         hud_scale = HUD_WIDTH / g.hud_screen_width(false);
-        mouse_ix = floor(g.mouse_x_hud(0, false)) / MENU_ITEM_WIDTH + 5;
-        mouse_iy = floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale) / MENU_ITEM_WIDTH;
+        mouse_ix = int(floor(g.mouse_x_hud(0, false)) / MENU_ITEM_WIDTH + 5);
+        mouse_iy = int(floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale) / MENU_ITEM_WIDTH);
 
-        for (int ix=0; ix<columns.size(); ++ix) {
-            columns[ix].step(mouse_ix, mouse_iy);
+        for (int ix=0; ix<int(columns.size()); ++ix) {
+            columns[ix].step(this, mouse_ix, mouse_iy);
         }
 
         if (e.key_check_pressed_gvb(GVB::LeftClick)) {
@@ -125,20 +149,28 @@ class Menu : callback_base {
     }
 
     void expand_columns() {
-        for (int ix=0; ix<columns.size(); ++ix) {
+        for (int ix=0; ix<int(columns.size()); ++ix) {
             columns[ix].expanded = mouse_ix == ix and columns[ix].mouse_in_column(mouse_iy);
         }
     }
 
     bool mouse_in_menu() {
-        return 0 <= mouse_ix and mouse_ix < columns.size() and columns[mouse_ix].mouse_in_column(mouse_iy);
+        return 0 <= mouse_ix and mouse_ix < int(columns.size()) and columns[mouse_ix].mouse_in_column(mouse_iy);
     }
 
-    void select_tab(int ix, int iy) {
+    void select_tab(int ix, int iy, bool force=false) {
         const string new_selected_tab_name = get_tab_name(ix, iy);
-        if (new_selected_tab_name != "" and columns[ix].expanded) {
+        if (new_selected_tab_name == selected_tab_name && selected_tab_name != "") {
+            toggle_tab_tool(new_selected_tab_name);
+            return;
+        }
+        
+        if (new_selected_tab_name != "" and (columns[ix].expanded or force)) {
             if (selected_tab_name != "") {
                 columns[selected_ix].deselect_tab(selected_iy);
+                if (force) {
+                    disable_tab_tool(selected_tab_name);
+                }
             }
 
             e.hide_gui(iy != 0);
@@ -147,6 +179,10 @@ class Menu : callback_base {
             selected_ix = ix;
             selected_iy = iy;
             selected_tab_name = new_selected_tab_name;
+            
+            if (force and selected_tab_name != "") {
+                enable_tab_tool(selected_tab_name);
+            }
         }
     }
 
@@ -160,13 +196,30 @@ class Menu : callback_base {
         broadcast_message("EditorMenu.DisableTab." + tab_name, msg);
     }
 
+    void toggle_tab_tool(string tab_name) {
+        message@ msg = create_message();
+        broadcast_message("EditorMenu.ToggleTab." + tab_name, msg);
+    }
+
     string get_tab_name(int ix, int iy) {
-        if (ix < 0 or columns.size() <= ix) return "";
+        if (ix < 0 or int(columns.size()) <= ix) return "";
         return columns[ix].get_tab_name(iy);
     }
 
+    MenuItem@ get_menu_item(string tab_name) {
+        for (uint ix=0; ix<columns.size(); ++ix) {
+            MenuColumn@ column  = @columns[ix];
+            for (uint iy=0; iy<column.items.size(); ++iy) {
+                if (column.items[iy].name == tab_name) {
+                    return @column.items[iy];
+                }
+            }
+        }
+        return null;
+    }
+
     void editor_draw(float sub_frame) {
-        for (int ix=0; ix<columns.size(); ++ix) {
+        for (int ix=0; ix<int(columns.size()); ++ix) {
             columns[ix].draw(selected_iy != 0, min(1.0, visibility_timer), hud_scale);
         }
     }
@@ -185,16 +238,16 @@ class MenuColumn {
         this.ix = ix;
     }
 
-    void add_tab(string name, string sprite_name) {
-        items.insertLast(MenuItem(spr, name, sprite_name));
+    void add_tab(string name, string sprite_name, int shortcut_vk) {
+        items.insertLast(MenuItem(spr, name, sprite_name, this, items.length(), shortcut_vk));
     }
 
     bool mouse_in_column(int mouse_iy) {
-        return (expanded and 0 <= mouse_iy and mouse_iy < items.size()) or mouse_iy == 0;
+        return (expanded and 0 <= mouse_iy and mouse_iy < int(items.size())) or mouse_iy == 0;
     }
 
     string get_tab_name(int iy) {
-        if (iy < 0 or items.size() <= iy) return "";
+        if (iy < 0 or int(items.size()) <= iy) return "";
         return items[iy].name;
     }
 
@@ -208,16 +261,20 @@ class MenuColumn {
         selected = false;
     }
 
-    void step(int mouse_ix, int mouse_iy) {
-        expanded = mouse_ix == ix and mouse_in_column(mouse_iy);
-        for (int iy=0; iy<items.size(); ++iy) {
-            items[iy].draw_tooltip = mouse_ix == ix and mouse_iy == iy and (iy == 0 or expanded);
+    void step(Menu@ menu, int mouse_ix, int mouse_iy) {
+       expanded = mouse_ix == ix and mouse_in_column(mouse_iy);
+        for (uint iy=0; iy<items.size(); ++iy) {
+            MenuItem@ item = @items[iy];
+            if (item.shortcut_vk != -1 and menu.e.key_check_pressed_vk(item.shortcut_vk)) {
+                menu.select_tab(item.column.ix, item.iy, true);
+            }
+            item.draw_tooltip = mouse_ix == int(ix) and mouse_iy == int(iy) and (iy == 0 or expanded);
         }
     }
 
     void draw(bool draw_first, float visibility, float hud_scale) {
         int draw_iy = draw_first ? 0 : 1;
-        for (int iy=draw_iy; iy<items.size(); ++iy) {
+        for (int iy=draw_iy; iy<int(items.size()); ++iy) {
             if ((not selected and iy == 0) or expanded or items[iy].selected) {
                 items[iy].draw(ix, draw_iy, visibility, hud_scale);
                 ++draw_iy;
@@ -231,17 +288,23 @@ class MenuItem {
     sprites@ spr;
     textfield@ tooltip;
 
+    MenuColumn@ column;
+    int iy;
     string name;
     string sprite_name;
+    int shortcut_vk;
 
     bool draw_tooltip = false;
     bool selected = false;
 
-    MenuItem(sprites@ spr, string name, string sprite_name) {
+    MenuItem(sprites@ spr, string name, string sprite_name, MenuColumn@ column, int iy, int shortcut_vk=-1) {
         @g = get_scene();
         @this.spr = spr;
         this.name = name;
         this.sprite_name = sprite_name;
+        @this.column = column;
+        this.iy = iy;
+        this.shortcut_vk = shortcut_vk;
 
         @tooltip = @create_textfield();
         tooltip.set_font("envy_bold", 20);
@@ -264,7 +327,7 @@ class MenuItem {
                 0, 0x88FFFFFF
             );
         }
-        int background_opacity = floor(0xAA * visibility);
+        int background_opacity = int(floor(0xAA * visibility));
         g.draw_rectangle_hud(
             10, 0,
             x, y,
@@ -279,7 +342,7 @@ class MenuItem {
         );
 
         float padding = 5 * hud_scale;
-        int icon_opacity = selected ? 0xFF : floor(0x99 * visibility) + 0x22;
+        int icon_opacity = selected ? 0xFF : int(floor(0x99 * visibility)) + 0x22;
         spr.draw_hud(
             10, 0,
             sprite_name, 0, 1,
