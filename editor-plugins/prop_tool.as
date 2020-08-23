@@ -1,5 +1,6 @@
 #include "lib/props.cpp"
 #include "lib/enums/GVB.cpp"
+#include "lib/enums/VK.cpp"
 
 const string EMBED_proptoolicon = "proptoolicon.png";
 
@@ -42,10 +43,12 @@ class script : callback_base {
         msg.set_int("ix", 2);
         msg.set_string("name", "Prop Tool");
         msg.set_string("icon", "EditorMenu.proptoolicon");
+        msg.set_int("shortcut_vk", VK::Q);
         broadcast_message("EditorMenu.RegisterTab", msg);
 
         add_broadcast_receiver("EditorMenu.EnableTab.Prop Tool", this, "enable");
         add_broadcast_receiver("EditorMenu.DisableTab.Prop Tool", this, "disable");
+        add_broadcast_receiver("EditorMenu.ToggleTab.Prop Tool", this, "toggle");
     }
 
     void enable(string, message@) {
@@ -55,6 +58,12 @@ class script : callback_base {
 
     void disable(string, message@) {
         state = DISABLED;
+    }
+
+    void toggle(string, message@) {
+        message@ msg = create_message();
+        msg.set_string("name", "Props");
+        broadcast_message("EditorMenu.SelectTab", msg);
     }
 
     void editor_step() {
@@ -98,8 +107,27 @@ class script : callback_base {
 
             float sx, sy, scale;
             scale_from_layer(selected_prop.p.x(), selected_prop.p.y(), selected_prop.p.layer(), sx, sy, scale);
+            
+            if (selected_prop.p.layer() <= 5) {
+                scale = selected_prop.p.layer() <= 5 ? 2.0 : scale;
+            }
 
-            spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(), sx, sy, selected_prop.p.rotation(), scale * selected_prop.prop_scale_x, scale * selected_prop.prop_scale_y, 0xAAFFFFFF);
+            spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(),
+                sx, sy + 2 / c.editor_zoom(),
+                selected_prop.p.rotation(),
+                scale * selected_prop.prop_scale_x,
+                scale * selected_prop.prop_scale_y,
+                0x66000000);
+            spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(),
+                sx, sy - 2 / c.editor_zoom(),
+                selected_prop.p.rotation(),
+                scale * selected_prop.prop_scale_x,
+                scale * selected_prop.prop_scale_y,
+                0x66000000);
+            spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(), sx, sy, selected_prop.p.rotation(),
+                scale * selected_prop.prop_scale_x,
+                scale * selected_prop.prop_scale_y,
+                0xAAFFAAAA);
         }
     }
 
@@ -137,7 +165,7 @@ class script : callback_base {
         @selected_prop = null;
         int n = g.get_prop_collision(mouse_y, mouse_y, mouse_x, mouse_x);
         for (int i=0; i<n; ++i) {
-            Prop p(g.get_prop_collision_index(i));
+            Prop p(g.get_prop_collision_index(i), 0.5, 0.5, g);
             float dist = distance_to_prop(@p);
             if (dist < selected_dist) {
                 selected_dist = dist;
