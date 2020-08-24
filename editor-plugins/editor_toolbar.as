@@ -126,8 +126,8 @@ class Toolbar : callback_base, HudVisibility, HudScale {
 
     void editor_step() {
         update_hud_scale();
-        mouse_ix = int(floor(g.mouse_x_hud(0, false)) / TOOLBAR_ITEM_WIDTH + 5);
-        mouse_iy = int(floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale) / TOOLBAR_ITEM_WIDTH);
+        mouse_ix = int(floor(g.mouse_x_hud(0, false) / TOOLBAR_ITEM_WIDTH) + 5);
+        mouse_iy = int(floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale / TOOLBAR_ITEM_WIDTH));
 
         for (int ix=0; ix<int(columns.size()); ++ix) {
             columns[ix].step(mouse_ix, mouse_iy);
