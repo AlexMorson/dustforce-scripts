@@ -1,13 +1,9 @@
 #include "lib/enums/GVB.cpp"
 #include "hud_visibility.as"
+#include "hud_scale.as"
 
 const int TOOLBAR_BG_COLOUR = 0x35302A;
 const int TOOLBAR_ITEM_WIDTH = 60;
-
-const float HUD_WIDTH = 1600.0;
-const float HUD_HEIGHT = 900.0;
-const float HUD_WIDTH_HALF = HUD_WIDTH / 2.0;
-const float HUD_HEIGHT_HALF = HUD_HEIGHT / 2.0;
 
 class script {
     Toolbar toolbar;
@@ -21,7 +17,7 @@ class script {
     }
 }
 
-class Toolbar : callback_base, HudVisibility {
+class Toolbar : callback_base, HudVisibility, HudScale {
     scene@ g;
     editor_api@ e;
 
@@ -29,7 +25,6 @@ class Toolbar : callback_base, HudVisibility {
 
     array<ToolbarColumn@> columns;
 
-    float hud_scale;
     int selected_ix, selected_iy;
     string selected_tab_name;
     int mouse_ix, mouse_iy;
@@ -130,7 +125,7 @@ class Toolbar : callback_base, HudVisibility {
     }
 
     void editor_step() {
-        hud_scale = HUD_WIDTH / g.hud_screen_width(false);
+        update_hud_scale();
         mouse_ix = int(floor(g.mouse_x_hud(0, false)) / TOOLBAR_ITEM_WIDTH + 5);
         mouse_iy = int(floor((g.mouse_y_hud(0, true) + HUD_HEIGHT_HALF) / hud_scale) / TOOLBAR_ITEM_WIDTH);
 
