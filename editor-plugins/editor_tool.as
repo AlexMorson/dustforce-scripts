@@ -44,8 +44,8 @@ abstract class EditorTool : callback_base, HudVisibility, HudScale {
         msg.set_string("icon", icon);
         broadcast_message("Toolbar.RegisterTab", msg);
 
-        add_broadcast_receiver("Toolbar.SelectTab.Prop Tool", this, "_on_select_tab");
-        add_broadcast_receiver("Toolbar.DeselectTab.Prop Tool", this, "_on_deselect_tab");
+        add_broadcast_receiver("Toolbar.SelectTab." + name, this, "_on_select_tab");
+        add_broadcast_receiver("Toolbar.DeselectTab." + name, this, "_on_deselect_tab");
         add_broadcast_receiver("Toolbar.MouseEnterToolbar", this, "_on_mouse_enter_toolbar");
         add_broadcast_receiver("Toolbar.MouseLeaveToolbar", this, "_on_mouse_leave_toolbar");
     }
