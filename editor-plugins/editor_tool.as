@@ -1,6 +1,6 @@
-#include "gui_visibility.as"
+#include "hud_visibility.as"
 
-abstract class EditorTool : callback_base, GuiVisibility {
+abstract class EditorTool : callback_base, HudVisibility {
     private bool first_frame = true;
 
     void register_tab() {}
@@ -15,7 +15,7 @@ abstract class EditorTool : callback_base, GuiVisibility {
             first_frame = false;
         }
 
-        update_gui_visibility();
+        update_hud_visibility();
     }
 
     protected void register_tab(int ix, string name, string icon = "") {

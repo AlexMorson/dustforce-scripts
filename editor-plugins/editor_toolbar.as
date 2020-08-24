@@ -1,5 +1,5 @@
 #include "lib/enums/GVB.cpp"
-#include "gui_visibility.as"
+#include "hud_visibility.as"
 
 const int TOOLBAR_BG_COLOUR = 0x35302A;
 const int TOOLBAR_ITEM_WIDTH = 60;
@@ -21,7 +21,7 @@ class script {
     }
 }
 
-class Toolbar : callback_base, GuiVisibility {
+class Toolbar : callback_base, HudVisibility {
     scene@ g;
     editor_api@ e;
 
@@ -154,7 +154,7 @@ class Toolbar : callback_base, GuiVisibility {
             }
         }
 
-        update_gui_visibility();
+        update_hud_visibility();
     }
 
     bool check_mouse_in_toolbar() {
@@ -202,7 +202,7 @@ class Toolbar : callback_base, GuiVisibility {
 
     void editor_draw(float sub_frame) {
         for (int ix=0; ix<int(columns.size()); ++ix) {
-            columns[ix].draw(selected_iy != 0, gui_visibility, hud_scale);
+            columns[ix].draw(selected_iy != 0, hud_visibility, hud_scale);
         }
     }
 }
