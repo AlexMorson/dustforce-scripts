@@ -14,10 +14,7 @@ enum PropToolState {
 }
 
 class script : EditorTool {
-    scene@ g;
-    editor_api@ e;
     camera@ c;
-
     sprites@ spr;
 
     PropToolState state = DISABLED;
@@ -27,10 +24,7 @@ class script : EditorTool {
     float mouse_x_prev, mouse_y_prev;
 
     script() {
-        @g = get_scene();
-        @e = get_editor_api();
         @c = get_camera(0);
-
         @spr = create_sprites();
     }
 
