@@ -158,6 +158,7 @@ class Toolbar : callback_base, HudVisibility, HudScale {
 
     void select_tab(int ix, int iy, bool force=false) {
         if (selected_ix == ix and selected_iy == iy) return;
+        bool help_tab = ix == 9 and iy == 0;
 
         const string new_selected_tab_name = get_tab_name(ix, iy);
         if (new_selected_tab_name != "" and (columns[ix].expanded or force)) {
@@ -168,7 +169,7 @@ class Toolbar : callback_base, HudVisibility, HudScale {
 
             mouse_in_menu = false;
             e.hide_gui(iy != 0);
-            e.editor_tab(columns[ix].items[0].name);
+            if (not help_tab) e.editor_tab(columns[ix].items[0].name);
             columns[ix].select_tab(iy);
             selected_ix = ix;
             selected_iy = iy;
