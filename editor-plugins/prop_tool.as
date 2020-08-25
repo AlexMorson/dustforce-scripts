@@ -4,7 +4,7 @@
 #include "../lib/enums/GVB.cpp"
 #include "../lib/enums/VK.cpp"
 
-const string EMBED_proptoolicon = "proptoolicon.png";
+const string EMBED_proptoolicon = "editor-plugins/proptoolicon.png";
 
 enum PropToolState {
     DISABLED,
