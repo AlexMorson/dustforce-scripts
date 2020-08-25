@@ -1,6 +1,7 @@
-#include "lib/enums/GVB.cpp"
 #include "hud_visibility.as"
 #include "hud_scale.as"
+
+#include "../lib/enums/GVB.cpp"
 
 const int TOOLBAR_BG_COLOUR = 0x35302A;
 const int TOOLBAR_ITEM_WIDTH = 60;

@@ -1,7 +1,8 @@
-#include "lib/props.cpp"
-#include "lib/enums/GVB.cpp"
-#include "lib/enums/VK.cpp"
 #include "editor_tool.as"
+
+#include "../lib/props.cpp"
+#include "../lib/enums/GVB.cpp"
+#include "../lib/enums/VK.cpp"
 
 const string EMBED_proptoolicon = "proptoolicon.png";
 

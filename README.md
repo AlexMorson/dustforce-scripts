@@ -7,8 +7,9 @@ A collection of plugins designed to enhance the dustforce level editor.
 ### Installation
 
 1. Copy **lib** from [cmann1/DustScripts](https://github.com/cmann1/DustScripts) into your **script_src** directory.
-2. Copy the contents of **editor-plugins** into your **script_src** directory.
+2. Copy **editor-plugins** into your **script_src** directory.
 3. In-game, navigate to `Dustmod > Mods > Plugins` and compile the desired plugins.
+    * Note: `Source` is the whole path to the source file. eg, **editor-plugins/editor_toolbar.as**
 4. Enable the compiled plugins in the `Editor Plugins` menu.
 
 ## Maps
