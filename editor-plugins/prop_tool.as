@@ -103,14 +103,16 @@ class script : EditorTool {
                 scale = selected_prop.p.layer() <= 5 ? 2.0 : scale;
             }
 
+            float outline_offset = 2.0 / c.editor_zoom();
+            puts(c.editor_zoom());
             spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(),
-                sx + 2, sy + 2,
+                sx + outline_offset, sy + outline_offset,
                 selected_prop.p.rotation(),
                 scale * selected_prop.prop_scale_x,
                 scale * selected_prop.prop_scale_y,
                 0x66000000);
             spr.draw_world(22, 0, sprite_name, 0, selected_prop.p.palette(),
-                sx - 2, sy - 2,
+                sx - outline_offset, sy - outline_offset,
                 selected_prop.p.rotation(),
                 scale * selected_prop.prop_scale_x,
                 scale * selected_prop.prop_scale_y,
