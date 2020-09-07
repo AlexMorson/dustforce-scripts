@@ -1,6 +1,7 @@
 #include "editor_tool.as"
 
-#include "../lib/props.cpp"
+#include "../lib/props/common.cpp"
+#include "../lib/props/Prop.cpp"
 #include "../lib/enums/GVB.cpp"
 #include "../lib/enums/VK.cpp"
 
