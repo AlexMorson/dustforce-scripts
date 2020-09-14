@@ -1,6 +1,49 @@
 #include "lib/std.cpp"
 #include "lib/math/math.cpp"
 
+/*
+class script {
+    scene@ g;
+    controllable@ p;
+
+    [text] Camera cam;
+
+    bool ground_prev = false;
+    float vy_prev = 0;
+
+    script() {
+        @g = @get_scene();
+    }
+
+    void on_level_start() {
+        @p = controller_controllable(0);
+        cam.init(p.x(), p.y() - 48);
+    }
+
+    void checkpoint_load() {
+        @p = controller_controllable(0);
+        cam.init(p.x(), p.y() - 48);
+    }
+
+    void move_cameras() {
+        if (p !is null) {
+            cam.move_cameras(p.x(), p.y() - 48, p.x_speed(), p.y_speed());
+
+            // Rudimentary camera shake implementation
+            if (p.ground() and not ground_prev and vy_prev >= 1500.0) {
+                cam.shake_timer = max(15, cam.shake_timer);
+            }
+            ground_prev = p.ground();
+            vy_prev = p.y_speed();
+        }
+    }
+
+    void draw(float sub_frame) {
+        cam.draw(sub_frame);
+    }
+}
+*/
+
 class Camera {
 
     [text] bool draw_camera = true;
@@ -10,7 +53,7 @@ class Camera {
     [hidden] int active_node_id;
     [hidden] int target_node_id;
 
-    [hidden] float shake_timer = 0;
+    [hidden] int shake_timer = 0;
 
     scene@ g;
     camera@ c;
@@ -112,7 +155,7 @@ class Camera {
             float blend = 0;
 
             vararray@ control_width = active_node.vars().get_var(1).get_array();
-            for (int i=0; i<control_width.size(); ++i) {
+            for (uint i=0; i<control_width.size(); ++i) {
                 float control_len = control_width.at(i).get_vec2_x();
                 float control_dir = control_width.at(i).get_vec2_y();
                 float control_x = active_node.x() + control_len * sin(DEG2RAD * control_dir);
@@ -129,7 +172,7 @@ class Camera {
             }
 
             vararray@ adjacent_node_ids = active_node.vars().get_var(0).get_array();
-            for (int i=0; i<adjacent_node_ids.size(); ++i) {
+            for (uint i=0; i<adjacent_node_ids.size(); ++i) {
                 entity@ adjacent_node = entity_by_id(adjacent_node_ids.at(i).get_int32());
                 float path_x, path_y, lambda;
                 closest_point_on_line_segment(puppet_x, puppet_y, active_node.x(), active_node.y(), adjacent_node.x(), adjacent_node.y(), path_x, path_y, lambda);
@@ -138,8 +181,8 @@ class Camera {
                     vararray@ c_node_ids = adjacent_node.vars().get_var(0).get_array();
                     vararray@ test_width = adjacent_node.vars().get_var(3).get_array();
                     // Search for the active node
-                    for (int j=0; j<c_node_ids.size(); ++j) {
-                        if (c_node_ids.at(j).get_int32() == active_node.id()) {
+                    for (uint j=0; j<c_node_ids.size(); ++j) {
+                        if (c_node_ids.at(j).get_int32() == int(active_node.id())) {
                             float dist_to_node = distance(path_x, path_y, adjacent_node.x(), adjacent_node.y());
                             if (dist_to_node <= test_width.at(j).get_int32()) {
                                 @new_active_node = @adjacent_node;
@@ -167,8 +210,8 @@ class Camera {
                     vararray@ c_node_ids = active_node.vars().get_var(0).get_array();
                     vararray@ test_width = active_node.vars().get_var(3).get_array();
                     // Search for the target node
-                    for (int i=0; i<c_node_ids.size(); ++i) {
-                        if (c_node_ids.at(i).get_int32() == target_node.id()) {
+                    for (uint i=0; i<c_node_ids.size(); ++i) {
+                        if (c_node_ids.at(i).get_int32() == int(target_node.id())) {
                             float dist_to_node = distance(target_x, target_y, active_node.x(), active_node.y());
                             if (dist_to_node <= test_width.at(i).get_int32()) {
                                 @new_active_node = null;
@@ -196,8 +239,8 @@ class Camera {
                     vararray@ c_node_ids = active_node.vars().get_var(0).get_array();
                     vararray@ test_width = active_node.vars().get_var(3).get_array();
                     // Search for the target node
-                    for (int i=0; i<c_node_ids.size(); ++i) {
-                        if (c_node_ids.at(i).get_int32() == target_node.id()) {
+                    for (uint i=0; i<c_node_ids.size(); ++i) {
+                        if (c_node_ids.at(i).get_int32() == int(target_node.id())) {
                             float dist_to_node = distance(target_x, target_y, active_node.x(), active_node.y());
                             if (dist_to_node <= test_width.at(i).get_int32()) {
                                 @new_active_node = null;
@@ -236,8 +279,8 @@ class Camera {
         camera_vx += 0.01 * (offset_x + target_x - camera_x);
         camera_vy += 0.01 * (offset_y + target_y - camera_y);
 
-        camera_vx *= min(1, 0.7 + abs(puppet_vx / 12000));
-        camera_vy *= min(1, 0.7 + abs(puppet_vy / 12000));
+        camera_vx *= min(1.0, 0.7 + abs(puppet_vx / 12000));
+        camera_vy *= min(1.0, 0.7 + abs(puppet_vy / 12000));
 
         camera_x += camera_vx;
         camera_y += camera_vy;
@@ -280,7 +323,7 @@ void closest_point_on_line_segment(
         sy = py;
     } else {
         lambda = ((x - px) * qx_px + (y - py) * qy_py) / denom;
-        lambda = max(0, min(1, lambda));
+        lambda = max(0.0, min(1.0, lambda));
         sx = px + lambda * qx_px;
         sy = py + lambda * qy_py;
     }
