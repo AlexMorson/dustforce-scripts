@@ -9,7 +9,7 @@ class PlayerGhost : trigger_base
 
     [text] string name = "";
     [text] int layer = 15;
-    [text] float speed = 1.0;
+    [text] float rate = 1.0;
 
     [hidden] float offset_x = 0;
     [hidden] float offset_y = 0;
@@ -17,7 +17,8 @@ class PlayerGhost : trigger_base
     Recording@ recording;
     Playback@ playback;
 
-    void init(script@ s, scripttrigger@ self) {
+    void init(script@ s, scripttrigger@ self)
+    {
         @this.s = @s;
         @this.self = @self;
 
@@ -31,6 +32,7 @@ class PlayerGhost : trigger_base
         string name = var.get_name();
         if (name == "name") load_recording();
         if (name == "layer" and playback !is null) playback.layer = layer; 
+        if (name == "rate" and playback !is null) playback.rate = rate; 
     }
 
     void load_recording()
@@ -38,7 +40,7 @@ class PlayerGhost : trigger_base
         if (RECORDINGS.exists(name))
         {
             @recording = Recording(string(RECORDINGS[name]));
-            @playback = Playback(recording, layer, speed, true);
+            @playback = Playback(recording, layer, rate);
         }
         else
         {
@@ -59,7 +61,7 @@ class PlayerGhost : trigger_base
 
         if (recording is null) return;
 
-        PlayerState@ start = recording.states[0];
+        Sprite@ start = recording.sprites[0][0];
 
         int player_x = 48 * int(round(start.x / 48));
         int player_y = 48 * int(round(start.y / 48));
@@ -91,33 +93,30 @@ class PlayerGhost : trigger_base
 
 class Playback
 {
+    SpritesCache sprites_cache;
     Recording@ recording;
-    int layer = 18;
+    int layer;
+    float rate;
+    int enemy_sublayer = 8;
     int player_sublayer = 10;
     int effect_sublayer = 14;
-    float speed = 1.0;
-    bool virtual = false;
 
-    sprites@ spr;
-    float position;
+    float time;
     array<Effect> active_effects;
 
-    Playback(Recording@ recording, int layer, float speed, bool virtual)
+    Playback(Recording@ recording, int layer, float rate)
     {
         @this.recording = recording;
         this.layer = layer;
-        this.speed = speed;
-        this.virtual = virtual;
-
-        @spr = create_sprites();
-        spr.add_sprite_set(virtual ? "vdustman" : "dustman");
+        this.rate = rate;
     }
 
     void step()
     {
-        int last_frame = int(position);
-        position = (position + speed) % recording.size();
-        int new_frame = int(position);
+        int last_frame = int(time);
+        time = (time + rate) % recording.frames;
+        puts("> " + time);
+        int new_frame = int(time);
 
         // Simulate time passing for the effects
         int frame = last_frame;
@@ -125,7 +124,7 @@ class Playback
         {
             step_frame(frame);
             ++frame;
-            if (frame >= int(recording.size()))
+            if (frame >= int(recording.frames))
             {
                 frame = 0;
                 active_effects.resize(0);
@@ -137,13 +136,13 @@ class Playback
     {
         // Instantiate recorded effects
         array<Effect>@ new_effects = recording.effects[frame];
-        for (uint i=0; i<new_effects.size(); ++i)
+        for (uint i = 0; i < new_effects.size(); ++i)
         {
             active_effects.insertLast(new_effects[i]);
         }
 
         // Update the effects
-        for (int i=active_effects.size()-1; i>=0; --i)
+        for (int i = active_effects.size() - 1; i >= 0; --i)
         {
             active_effects[i].step();
             if (active_effects[i].finished)
@@ -155,122 +154,171 @@ class Playback
 
     void editor_draw(float offset_x, float offset_y)
     {
-        const int steps = recording.size() / 10;
-        for (int i=0; i<steps; ++i)
+        for (uint entity_index = 0; entity_index < recording.sprites.size(); ++entity_index)
         {
-            int frame = i * recording.size() / steps;
-            PlayerState@ p = recording.states[frame];
-            spr.draw_world(layer, player_sublayer, p.sprite_index, p.state_timer, 1, p.x+offset_x, p.y+offset_y, p.rotation, p.face, 1, 0xFFFFFFFF);
+            int sub_layer = entity_index == 0 ? player_sublayer : enemy_sublayer;
+            int frame_count = recording.sprites[entity_index].size();
+            int steps = frame_count / 10;
+            for (int i = 0; i < steps; ++i)
+            {
+                int frame = i * frame_count / steps;
+                Sprite@ sprite = recording.sprites[entity_index][frame];
+                sprite.draw(sprites_cache, layer, sub_layer, offset_x, offset_y, 0xFFFFFFFF);
+            }
         }
     }
 
     void draw(float sub_frame, float offset_x, float offset_y)
     {
-        // Interpolate the player position
-        float sub_position = position - (1 - sub_frame) * speed;
-        float frac = sub_position - floor(sub_position);
-
-        PlayerState@ prev = recording.states[int(max(0, sub_position - 1))];
-        PlayerState@ cur = recording.states[int(max(0, sub_position))];
-
-        float x = prev.x + frac * (cur.x - prev.x) + offset_x;
-        float y = prev.y + frac * (cur.y - prev.y) + offset_y;
+        // How far through the current frame are we?
+        float sub_time = time - (1 - sub_frame) * rate;
+        float frac = sub_time - floor(sub_time);
 
         // Fade in/out at the start/end of the recording
-        const float fade_time = 10 * speed;
+        float fade_duration = 10 * rate;
         int opacity = 0xFF;
-        if (sub_position < fade_time) opacity = int(0xFF * max(0, sub_position) / fade_time);
-        if (sub_position > int(recording.size()) - fade_time) opacity = int(0xFF * (recording.size() - sub_position) / fade_time);
+        if (sub_time < fade_duration)
+            opacity = int(0xFF * max(0, sub_time) / fade_duration);
+        if (sub_time > int(recording.frames) - fade_duration)
+            opacity = int(0xFF * (recording.frames - sub_time) / fade_duration);
         uint colour = (opacity << 24) + 0xFFFFFF;
 
-        // Draw the player
-        spr.draw_world(layer, player_sublayer, cur.sprite_index, cur.state_timer, 1, x, y, cur.rotation, cur.face, 1, colour);
+        for (uint entity_index = 0; entity_index < recording.sprites.size(); ++entity_index)
+        {
+            array<Sprite>@ entity_sprites = recording.sprites[entity_index];
+            int frames = entity_sprites.size();
+
+            // Interpolate between previous and current frames
+            Sprite@ prev = entity_sprites[int(max(0, min(frames - 1, sub_time - 1)))];
+            Sprite@ cur = entity_sprites[int(max(0, min(frames - 1, sub_time)))];
+
+            float sub_offset_x = frac * (cur.x - prev.x) + offset_x;
+            float sub_offset_y = frac * (cur.y - prev.y) + offset_y;
+
+            int sub_layer = entity_index == 0 ? player_sublayer : enemy_sublayer;
+            prev.draw(sprites_cache, layer, sub_layer, sub_offset_x, sub_offset_y, colour);
+        }
 
         // Draw the effects
-        for (uint i=0; i<active_effects.size(); ++i)
+        for (uint i = 0; i < active_effects.size(); ++i)
         {
-            active_effects[i].draw(spr, layer, effect_sublayer, offset_x, offset_y, colour, virtual);
+            active_effects[i].draw(sprites_cache, layer, effect_sublayer, offset_x, offset_y, colour);
         }
     }
 }
 
 class Recording
 {
-    array<array<Effect>> effects;
-    array<PlayerState> states;
+    array<array<Effect>> effects; // effects[frame][i]
+    array<array<Sprite>> sprites; // sprites[entity][frame]
+    uint frames = 0;
 
     Recording(string recording)
     {
         array<string>@ lines = recording.split("\n");
+        array<string>@ sprite_sets = lines[0].split(" ");
         array<Effect> frame_effects;
-        for (uint i=0; i<lines.size(); ++i)
+        for (uint i = 1; i < lines.size(); ++i)
         {
             array<string>@ args = lines[i].split(" ");
-            if (args[0].substr(0, 2) == "dm")
+            int entity_index = parseInt(args[0]);
+            if (entity_index == -1)
             {
                 // Effect
-                string sprite_name = args[0];
-                float x = parseFloat(args[1]);
-                float y = parseFloat(args[2]);
-                int face = parseInt(args[3]);
-                float rotation = parseFloat(args[4]);
-                int freeze = parseInt(args[5]);
-                frame_effects.insertLast(Effect(sprite_name, x, y, face, rotation, freeze));
-            }
-            else
-            {
-                effects.insertLast(frame_effects);
-                frame_effects = array<Effect>();
-
-                // Player state
-                string sprite_index = args[0];
-                int state_timer = parseInt(args[1]);
+                string name = args[1];
                 float x = parseFloat(args[2]);
                 float y = parseFloat(args[3]);
                 int face = parseInt(args[4]);
                 float rotation = parseFloat(args[5]);
-                states.insertLast(PlayerState(sprite_index, state_timer, x, y, face, rotation));
+                int freeze = parseInt(args[6]);
+                frame_effects.insertLast(Effect(sprite_sets[0], name, x, y, face, rotation, freeze));
+            }
+            else
+            {
+                // Entity sprite
+                string name = args[1];
+                int frame = parseInt(args[2]);
+                float x = parseFloat(args[3]);
+                float y = parseFloat(args[4]);
+                int face = parseInt(args[5]);
+                float rotation = parseFloat(args[6]);
+
+                if (entity_index >= int(sprites.size()))
+                    sprites.insertLast(array<Sprite>());
+                
+                sprites[entity_index].insertLast(Sprite(sprite_sets[entity_index], name, frame, x, y, face, rotation));
+
+                // A player sprite indicates the start of the next frame
+                if (entity_index == 0)
+                {
+                    effects.insertLast(frame_effects);
+                    frame_effects = array<Effect>();
+                    ++frames;
+                }
             }
         }
         effects.insertLast(frame_effects);
         effects.removeAt(0);
     }
-
-    uint size()
-    {
-        return states.size();
-    }
 }
 
-class PlayerState
+class Sprite
 {
-    string sprite_index;
-    int state_timer;
+    string sprite_set;
+    string name;
+    int frame;
     float x;
     float y;
     int face;
     float rotation;
 
-    PlayerState() {}
+    Sprite() {}
 
-    PlayerState(string sprite_index, int state_timer, float x, float y, int face, float rotation)
+    Sprite(string sprite_set, string name, int frame, float x, float y, int face, float rotation)
     {
-        this.sprite_index = sprite_index;
-        this.state_timer = state_timer;
+        this.sprite_set = sprite_set;
+        this.name = name;
+        this.frame = frame;
         this.x = x;
         this.y = y;
         this.face = face;
         this.rotation = rotation;
     }
+
+    void draw(SpritesCache@ sprites_cache, int layer, int sub_layer, float offset_x, float offset_y, uint colour)
+    {
+        sprites@ spr = sprites_cache.get(sprite_set);
+        spr.draw_world(layer, sub_layer, name, frame, 1, x + offset_x, y + offset_y, rotation, face, 1, colour);
+    }
+}
+
+class SpritesCache
+{
+    array<sprites@> buffer;
+    dictionary lookup;
+
+    sprites@ get(string sprite_set)
+    {
+        int index;
+        if (lookup.get(sprite_set, index))
+            return buffer[index];
+        sprites@ spr = create_sprites();
+        spr.add_sprite_set(sprite_set);
+        index = buffer.size();
+        lookup[sprite_set] = index;
+        buffer.insertLast(spr);
+        return spr;
+    }
 }
 
 class Effect
 {
-    string sprite_name;
+    string sprite_set;
+    string name;
     int effect_index;
-    int face;
     float x;
     float y;
+    int face;
     float rotation;
     int freeze;
 
@@ -280,10 +328,11 @@ class Effect
 
     Effect() {}
 
-    Effect(string sprite_name, float x, float y, int face, float rotation, int freeze)
+    Effect(string sprite_set, string name, float x, float y, int face, float rotation, int freeze)
     {
-        this.sprite_name = sprite_name;
-        this.effect_index = EFFECTS.find(sprite_name);
+        this.sprite_set = sprite_set;
+        this.name = name;
+        this.effect_index = EFFECTS.find(name);
         this.x = x;
         this.y = y;
         this.face = face;
@@ -293,7 +342,8 @@ class Effect
 
     Effect(Effect@ other)
     {
-        this.sprite_name = other.sprite_name;
+        this.sprite_set = other.sprite_set;
+        this.name = other.name;
         this.effect_index = other.effect_index;
         this.x = other.x;
         this.y = other.y;
@@ -314,12 +364,12 @@ class Effect
         }
     }
 
-    void draw(sprites@ spr, int layer, int sub_layer, float offset_x=0.0, float offset_y=0.0, uint colour=0xFFFFFFFF, bool virtual=false)
+    void draw(SpritesCache@ sprites_cache, int layer, int sub_layer, float offset_x, float offset_y, uint colour)
     {
         if (finished) return;
 
-        string is_virtual = virtual ? "v" : "";
-        spr.draw_world(layer, sub_layer, is_virtual + sprite_name, sprite_index, 1, x+offset_x, y+offset_y, rotation, face, 1, colour);
+        sprites@ spr = sprites_cache.get(sprite_set);
+        spr.draw_world(layer, sub_layer, name, sprite_index, 1, x + offset_x, y + offset_y, rotation, face, 1, colour);
     }
 }
 
