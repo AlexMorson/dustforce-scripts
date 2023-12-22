@@ -1,0 +1,54 @@
+Gameplay
+[x] Spamming arms is slow
+[x] Head above is slow
+[x] Not breathing is slow/painful
+    - Breath meter (refills when above water)
+    - Energy meter (requires breath to refill, used when making strokes, determines speed of stroke)
+[x] Turn around
+[ ] Slow turnaround
+[x] Bang your head
+[x] 4 laps
+[x] Leg kicks
+
+Visuals
+[ ] Goggles
+[x] Arms
+[x] Clock
+[ ] Window
+- Down
+[x] Scrolling background
+[x] Line on bottom of pool
+[x] Drowning
+- Up
+[x] Pool walls
+[x] Water surface
+[x] Lane separators (bunch of disks)
+[ ] Droplets run down when surfacing
+
+Audio
+[x] On your marks, Bzzt
+[x] Dive splash
+[x] Gasp of breath
+[x] Stroke splash
+[x] Leg kick splash
+[x] Underwater variants
+[ ] Bang head
+[x] Heartbeat?
+[x] ~~Cheering?~~ Generic pool ambience
+
+Achievements
+[ ] One arm bandit - Finish the race with a single arm
+[ ] Leggy - Finish the race with only legs
+[ ] Under the sea - Drown.
+[ ] Bonk - Bang your head on the side of the pool
+[ ] Flipper - Do 3 somersaults in a row
+
+Sounds
+- Heartbeat: https://freesound.org/people/patobottos/sounds/369017/
+- Breaths: https://freesound.org/people/Tats14/sounds/408835/
+- Gasp: https://freesound.org/people/ecbhappyinc/sounds/427430/
+- Pool ambience: https://freesound.org/people/Martin.Sadoux/sounds/417516/
+- Beep: https://freesound.org/people/hz37/sounds/396450/
+- Small splashes: https://freesound.org/people/Robinhood76/sounds/79657/
+- Big splash: https://freesound.org/people/InspectorJ/sounds/352100/
+- Failure: Rain World (UIImpact1.wav)

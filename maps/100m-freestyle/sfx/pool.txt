@@ -1,0 +1,5 @@
+1. (If under) Filter Curve EQ, 200Hz 0db -> 10000Hz -48db
+2. Crossfade Tracks, Constant Power 1, Alternate In/Out
+3. Mix and Render
+4. Split Stereo Track
+5. Export left and right
