@@ -8,25 +8,25 @@
  * But there are a few possible outcomes, as shown by the coloured lines:
  * Green = The dust will be cleared.
  * Black = The node does not have line of sight to the dust, so it will not be cleared.
- * Blue = This node can only clear dust on the top of tiles (nodes coloured cyan, used
- * in up attacks) or on the bottom of tiles (nodes coloured red, used in down attacks),
- * so the dust will not be cleared.
+ * Blue = The dust is on a tile edge that this node cannot clear.
  *
- * There do seem to be a few exceptions to these rules though, with certain characters'
- * up or down attacks being slightly shorter than expected. The largest discrepancy is
+ * White nodes can clear dust on any edge of a tile, cyan nodes (used in up attacks)
+ * can only clear dust on the top edge of tiles, and red nodes (used in down attacks)
+ * can only clear dust on the bottom edge of tiles.
+ *
+ * There does seem to be something else going on here though, as certain characters'
+ * up or down attacks are slightly shorter than expected. The largest discrepancy is
  * worth's downlight, which is a whole 15 pixels shorter than expected!
  */
 
 #include "lib/math/math.cpp"
-#include "lib/tiles/common.cpp"
 #include "lib/tiles/get_tile_edge_points.cpp"
 
 const float TAU = 2 * PI;
 
 const uint32 OUTER_BORDER = 0xFFFFFFFF;
 const uint32 INNER_BORDER = 0x22FFFFFF;
-const uint32 PRE_OCCLUDED = 0x44000000;
-const uint32 POST_OCCLUDED = 0x44000000;
+const uint32 OCCLUDED = 0x44000000;
 const uint32 CLEANED = 0x8800FF00;
 const uint32 BAD_SIDE = 0x882222FF;
 
@@ -112,21 +112,6 @@ array<Dust> get_dust_in_rectangle(float center_x, float center_y, float width, f
     return dust;
 }
 
-bool is_inside_tile(scene@ g, float x, float y)
-{
-    int tile_x = int(floor(x / 48));
-    int tile_y = int(floor(y / 48));
-
-    tileinfo@ tile = g.get_tile(tile_x, tile_y);
-    if (not tile.solid())
-    {
-        return false;
-    }
-
-    float _;
-    return point_in_tile(x, y, tile_x, tile_y, tile.type(), _, _);
-}
-
 class FilthProjectionNodes
 {
     float center_x;
@@ -209,19 +194,13 @@ class FilthProjectionNodes
 
                 if (r <= distance and 2 * r * r * (1 - cos(a)) <= 48 * 48)
                 {
-                    // Check if the node is blocked by being inside of a tile.
-                    if (is_inside_tile(g, node_x, node_y))
-                    {
-                        g.draw_line_world(22, 0, node_x, node_y, dust_x, dust_y, 1, POST_OCCLUDED);
-                        continue;
-                    }
-
-                    // Check if the node has line of sight to the dust.
-                    raycast@ ray = g.ray_cast_tiles(node_x, node_y, dust_x, dust_y);
+                    // Check if the node has line of sight to the dust. Cast the ray from
+                    // the dust to the node to ensure that the ray starts on the outside
+                    // of a tile. (Rays cast from within a tile do not hit the tile.)
+                    raycast@ ray = g.ray_cast_tiles(dust_x, dust_y, node_x, node_y);
                     if (ray.hit())
                     {
-                        g.draw_line_world(22, 0, node_x, node_y, ray.hit_x(), ray.hit_y(), 1, PRE_OCCLUDED);
-                        g.draw_line_world(22, 0, ray.hit_x(), ray.hit_y(), dust_x, dust_y, 1, POST_OCCLUDED);
+                        g.draw_line_world(22, 0, node_x, node_y, dust_x, dust_y, 1, OCCLUDED);
                         continue;
                     }
 
