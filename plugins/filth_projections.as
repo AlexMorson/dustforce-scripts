@@ -19,6 +19,7 @@
 
 #include "lib/math/math.cpp"
 #include "lib/tiles/common.cpp"
+#include "lib/tiles/get_tile_edge_points.cpp"
 
 const float TAU = 2 * PI;
 
@@ -77,15 +78,34 @@ array<Dust> get_dust_in_rectangle(float center_x, float center_y, float width, f
     {
         for (int tile_y = tile_y1; tile_y < tile_y2; ++tile_y)
         {
+            tileinfo@ tile = g.get_tile(tile_x, tile_y);
+            if (not tile.solid())
+            {
+                continue;
+            }
+
             tilefilth@ filth = g.get_tile_filth(tile_x, tile_y);
+            float x1, y1, x2, y2;
             if (1 <= filth.top() and filth.top() <= 5)
-                dust.insertLast(Dust(48 * tile_x + 24, 48 * tile_y - OFFSET, TileSide::TOP));
+            {
+                get_tile_top_edge_points(tile.type(), x1, y1, x2, y2, 48 * tile_x, 48 * tile_y);
+                dust.insertLast(Dust((x1 + x2) / 2, (y1 + y2) / 2 - OFFSET, TileSide::TOP));
+            }
             if (1 <= filth.bottom() and filth.bottom() <= 5)
-                dust.insertLast(Dust(48 * tile_x + 24, 48 * tile_y + 48 + OFFSET, TileSide::BOTTOM));
+            {
+                get_tile_bottom_edge_points(tile.type(), x1, y1, x2, y2, 48 * tile_x, 48 * tile_y);
+                dust.insertLast(Dust((x1 + x2) / 2, (y1 + y2) / 2 + OFFSET, TileSide::BOTTOM));
+            }
             if (1 <= filth.left() and filth.left() <= 5)
-                dust.insertLast(Dust(48 * tile_x - OFFSET, 48 * tile_y + 24, TileSide::LEFT));
+            {
+                get_tile_left_edge_points(tile.type(), x1, y1, x2, y2, 48 * tile_x, 48 * tile_y);
+                dust.insertLast(Dust((x1 + x2) / 2 - OFFSET, (y1 + y2) / 2, TileSide::LEFT));
+            }
             if (1 <= filth.right() and filth.right() <= 5)
-                dust.insertLast(Dust(48 * tile_x + 48 + OFFSET, 48 * tile_y + 24, TileSide::RIGHT));
+            {
+                get_tile_right_edge_points(tile.type(), x1, y1, x2, y2, 48 * tile_x, 48 * tile_y);
+                dust.insertLast(Dust((x1 + x2) / 2 + OFFSET, (y1 + y2) / 2, TileSide::RIGHT));
+            }
         }
     }
 
